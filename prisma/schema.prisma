@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Contest {
+  id           Int      @id @default(autoincrement())  // Auto-increment ID
+  name         String
+  contestImage String
+  endDate      DateTime
+  status       String   @default("active") @db.VarChar(10)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  participants Participant[]
+}
+
+model Participant {
+  id                 Int      @id @default(autoincrement())  // Auto-increment ID
+  contestId          Int
+  babyName           String
+  babyDob            DateTime
+  babyGender         String   @db.VarChar(10)
+  babyImage          String
+  parentName         String
+  parentContactNumber String  @db.VarChar(15)
+  city              String
+  createdAt         DateTime @default(now())
+
+  contest           Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  votes            Vote[]
+}
+
+model Vote {
+  id            Int    @id @default(autoincrement())  // Auto-increment ID
+  participantId Int
+  cookieId      String
+  createdAt     DateTime @default(now())
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  
+  @@unique([participantId, cookieId]) // Ensures one vote per participant per cookie
+}
+
