@@ -1,4 +1,13 @@
-import { BadRequestException, HttpCode, HttpException, HttpStatus, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpCode,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
@@ -13,20 +22,29 @@ export class ParticipantService {
   private s3: S3Client;
   private bucketName: string | undefined;
 
-  constructor(private readonly configService: ConfigService, private readonly prisma: PrismaService, @Inject(CACHE_MANAGER) private cacheManager: Cache) {
-    this.s3 = new S3Client([{
-      region: this.configService.get<string>('AWS_REGION'),
-      credentials: {
-        accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID'),
-        secretAccessKey: this.configService.get<string>('AWS_SECRET_ACCESS_KEY'),
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {
+    this.s3 = new S3Client([
+      {
+        region: this.configService.get<string>('AWS_REGION'),
+        credentials: {
+          accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID'),
+          secretAccessKey: this.configService.get<string>(
+            'AWS_SECRET_ACCESS_KEY',
+          ),
+        },
       },
-    }]);
+    ]);
 
     this.bucketName = this.configService.get<string>('AWS_BUCKET_NAME');
   }
 
   async uploadImage(file: any, contestId: string): Promise<string> {
-    if(!contestId) throw new HttpException("No Contest Id found.", HttpStatus.BAD_REQUEST);
+    if (!contestId)
+      throw new HttpException('No Contest Id found.', HttpStatus.BAD_REQUEST);
     const fileKey = `participants/${contestId}/${file.originalname}`;
 
     const uploadParams = {
@@ -68,7 +86,7 @@ export class ParticipantService {
     // clear cache
     const participantKey = `participants_${data.contestId}_${cookieId}`;
     await this.cacheManager.del(participantKey);
-    await this.cacheManager.del("contests_list");
+    await this.cacheManager.del('contests_list');
     await this.cacheManager.del(`leaderboard_${data.contestId}`);
 
     return { message: 'Participant registered successfully', participant };
@@ -173,7 +191,7 @@ export class ParticipantService {
     const leaderboard = participants.map((participant, index) => ({
       id: participant.id,
       rank: index + 1, // Rank based on order
-      name: `${participant.babyName} ${participant.parentName}`, // Full name
+      name: `${participant.babyName}`, // Full name
       age: formatDistanceToNowStrict(new Date(participant.babyDob)), // Age in months
       votes: participant.votes.length,
       image: participant.babyImage,
@@ -181,8 +199,8 @@ export class ParticipantService {
 
     const leaderboardResponse = {
       contest: participants[0]?.contest,
-      leaderboard
-    }
+      leaderboard,
+    };
 
     // Cache leaderboard data for 1 day
     await this.cacheManager.set(cacheKey, leaderboardResponse); // 1 day = 86400 seconds
