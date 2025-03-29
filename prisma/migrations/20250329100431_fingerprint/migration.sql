@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "Contest" (
-    "id" UUID NOT NULL,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "contestImage" TEXT NOT NULL,
     "endDate" TIMESTAMP(3) NOT NULL,
@@ -13,8 +13,8 @@ CREATE TABLE "Contest" (
 
 -- CreateTable
 CREATE TABLE "Participant" (
-    "id" UUID NOT NULL,
-    "contestId" UUID NOT NULL,
+    "id" SERIAL NOT NULL,
+    "contestId" INTEGER NOT NULL,
     "babyName" TEXT NOT NULL,
     "babyDob" TIMESTAMP(3) NOT NULL,
     "babyGender" VARCHAR(10) NOT NULL,
@@ -29,19 +29,20 @@ CREATE TABLE "Participant" (
 
 -- CreateTable
 CREATE TABLE "Vote" (
-    "id" UUID NOT NULL,
-    "participantId" UUID NOT NULL,
+    "id" SERIAL NOT NULL,
+    "participantId" INTEGER NOT NULL,
     "cookieId" TEXT NOT NULL,
+    "fingerprintId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Vote_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Vote_cookieId_key" ON "Vote"("cookieId");
+CREATE UNIQUE INDEX "Vote_participantId_cookieId_key" ON "Vote"("participantId", "cookieId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Vote_participantId_cookieId_key" ON "Vote"("participantId", "cookieId");
+CREATE UNIQUE INDEX "Vote_participantId_fingerprintId_key" ON "Vote"("participantId", "fingerprintId");
 
 -- AddForeignKey
 ALTER TABLE "Participant" ADD CONSTRAINT "Participant_contestId_fkey" FOREIGN KEY ("contestId") REFERENCES "Contest"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -35,13 +35,15 @@ model Participant {
 }
 
 model Vote {
-  id            Int    @id @default(autoincrement())  // Auto-increment ID
+  id            Int    @id @default(autoincrement())  
   participantId Int
   cookieId      String
+  fingerprintId String
   createdAt     DateTime @default(now())
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
-  
-  @@unique([participantId, cookieId]) // Ensures one vote per participant per cookie
+
+  @@unique([participantId, cookieId]) // Prevents duplicate voting from same cookie
+  @@unique([participantId, fingerprintId]) // Prevents duplicate voting from same fingerprint
 }
 

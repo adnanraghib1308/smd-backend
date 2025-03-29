@@ -1,4 +1,18 @@
-import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Post, Req, UploadedFile, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+  Req,
+  UploadedFile,
+  UseInterceptors,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ParticipantService } from './participant.service';
 import { CreateParticipantDto } from './dto/create-participant.dto';
@@ -10,7 +24,10 @@ export class ParticipantController {
 
   @Post('upload/:contestId')
   @UseInterceptors(FileInterceptor('image')) // Handle single file upload
-  async uploadImage(@UploadedFile() file: any, @Param('contestId') contestId: string) {
+  async uploadImage(
+    @UploadedFile() file: any,
+    @Param('contestId') contestId: string,
+  ) {
     if (!file) {
       throw new Error('No file uploaded');
     }
@@ -21,24 +38,37 @@ export class ParticipantController {
 
   @Post('join')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async joinContest(@Req() req: Request, @Body() createParticipantDto: CreateParticipantDto) {
+  async joinContest(
+    @Req() req: Request,
+    @Body() createParticipantDto: CreateParticipantDto,
+  ) {
     const cookieId = req.cookies['vote_cookie']; // Get stored cookie
-    
+
     if (!cookieId) {
-      throw new BadRequestException('No vote cookie found. Please enable cookies.');
+      throw new BadRequestException(
+        'No vote cookie found. Please enable cookies.',
+      );
     }
     return this.participantService.joinContest(createParticipantDto, cookieId);
   }
 
   @Get('details/:participantId')
-  async getParticipantDetails(@Param('participantId', ParseIntPipe) participantId: number, @Req() req: Request) {
+  async getParticipantDetails(
+    @Param('participantId', ParseIntPipe) participantId: number,
+    @Query('fingerprintId') fingerprintId: string,
+    @Req() req: Request,
+  ) {
     const cookieId = req.cookies['vote_cookie'];
-    
-    if (!cookieId) {
+
+    if (!cookieId || !fingerprintId) {
       throw new BadRequestException('Cookie ID is required');
     }
 
-    return this.participantService.getParticipantDetails(participantId, cookieId);
+    return this.participantService.getParticipantDetails(
+      participantId,
+      cookieId,
+      fingerprintId,
+    );
   }
 
   @Get('leaderboard/:contestId')
@@ -47,12 +77,22 @@ export class ParticipantController {
   }
 
   @Get(':contestId')
-  async getParticipants(@Req() req: Request, @Param('contestId', ParseIntPipe) contestId: number) {
+  async getParticipants(
+    @Req() req: Request,
+    @Param('contestId', ParseIntPipe) contestId: number,
+    @Query('fingerprintId') fingerprintId: string,
+  ) {
     const cookieId = req.cookies['vote_cookie']; // Get stored cookie
-    
-    if (!cookieId) {
-      throw new BadRequestException('No vote cookie found. Please enable cookies.');
+
+    if (!cookieId || !fingerprintId) {
+      throw new BadRequestException(
+        'No vote cookie found. Please enable cookies.',
+      );
     }
-    return this.participantService.getParticipantsByContest(contestId, cookieId);
+    return this.participantService.getParticipantsByContest(
+      contestId,
+      cookieId,
+      fingerprintId,
+    );
   }
 }

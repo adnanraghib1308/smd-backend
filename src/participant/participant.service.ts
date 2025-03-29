@@ -92,7 +92,11 @@ export class ParticipantService {
     return { message: 'Participant registered successfully', participant };
   }
 
-  async getParticipantsByContest(contestId: number, cookieId: string) {
+  async getParticipantsByContest(
+    contestId: number,
+    cookieId: string,
+    fingerprintId: string,
+  ) {
     const cacheKey = `participants_${contestId}_${cookieId}`;
 
     // Check if the data is cached
@@ -118,7 +122,10 @@ export class ParticipantService {
       age: formatDistanceToNowStrict(new Date(participant.babyDob)), // Age in human format
       votes: participant.votes.length,
       image: participant.babyImage,
-      isVote: participant.votes.some((vote) => vote.cookieId === cookieId), // Check if user has voted
+      isVote: participant.votes.some(
+        (vote) =>
+          vote.cookieId === cookieId || vote.fingerprintId === fingerprintId,
+      ), // Check if user has voted
     }));
 
     // Store in cache for 1 day
@@ -127,7 +134,11 @@ export class ParticipantService {
     return response;
   }
 
-  async getParticipantDetails(participantId: number, cookieId: string) {
+  async getParticipantDetails(
+    participantId: number,
+    cookieId: string,
+    fingerprintId: string,
+  ) {
     // Fetch participant details
     const participant = await this.prisma.participant.findUnique({
       where: { id: participantId },
@@ -142,9 +153,14 @@ export class ParticipantService {
     const totalVotes = participant.votes.length;
 
     // Check if the user has voted for this participant
-    const isVoted = await this.prisma.vote.findFirst({
+    let isVoted = await this.prisma.vote.findFirst({
       where: { participantId, cookieId },
     });
+    if (!isVoted) {
+      isVoted = await this.prisma.vote.findFirst({
+        where: { participantId, fingerprintId },
+      });
+    }
 
     // Get participant ranking based on votes
     const rankings = await this.prisma.participant.findMany({

@@ -10,14 +10,25 @@ export class VoteService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache, // Inject cache manager
   ) {}
 
-  async voteForParticipant(participantId: number, cookieId: string) {
+  async voteForParticipant(
+    participantId: number,
+    cookieId: string,
+    fingerprintId: string,
+  ) {
     // Check if user has already voted for this participant
-    const existingVote = await this.prisma.vote.findFirst({
+    let existingVote = await this.prisma.vote.findFirst({
       where: { participantId, cookieId },
     });
+    if (!existingVote) {
+      existingVote = await this.prisma.vote.findFirst({
+        where: { participantId, fingerprintId },
+      });
+    }
 
     if (existingVote) {
-      throw new BadRequestException('You have already voted for this participant.');
+      throw new BadRequestException(
+        'You have already voted for this participant.',
+      );
     }
 
     // Fetch the participant to get contestId
@@ -38,7 +49,7 @@ export class VoteService {
 
     // Store new vote
     return this.prisma.vote.create({
-      data: { participantId, cookieId },
+      data: { participantId, cookieId, fingerprintId },
     });
   }
 }
