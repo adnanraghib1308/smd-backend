@@ -63,10 +63,16 @@ export class ParticipantService {
     // Validate contest existence
     const contest = await this.prisma.contest.findUnique({
       where: { id: data.contestId },
+      select: { status: true }, // Only fetch status field
     });
 
     if (!contest) {
       throw new BadRequestException('Contest not found');
+    }
+
+    // Check if the contest is upcoming
+    if (contest.status !== 'upcoming') {
+      throw new BadRequestException('You can only join an upcoming contest');
     }
 
     // Insert participant
@@ -83,7 +89,7 @@ export class ParticipantService {
       },
     });
 
-    // clear cache
+    // Clear cache
     const participantKey = `participants_${data.contestId}_${cookieId}`;
     await this.cacheManager.del(participantKey);
     await this.cacheManager.del('contests_list');
@@ -103,6 +109,12 @@ export class ParticipantService {
     const cachedData = await this.cacheManager.get(cacheKey);
     if (cachedData) return cachedData;
 
+    const contest = await this.prisma.contest.findFirst({
+      where: { id: contestId },
+    });
+    if (contest?.status === 'inactive')
+      throw new BadRequestException('This contest is over!!');
+
     // Fetch participants and their votes
     const participants = await this.prisma.participant.findMany({
       where: { contestId },
@@ -116,7 +128,7 @@ export class ParticipantService {
     }
 
     // Format response
-    const response = participants.map((participant) => ({
+    const formatedParticipants = participants.map((participant) => ({
       id: participant.id,
       name: participant.babyName,
       age: formatDistanceToNowStrict(new Date(participant.babyDob)), // Age in human format
@@ -127,6 +139,8 @@ export class ParticipantService {
           vote.cookieId === cookieId || vote.fingerprintId === fingerprintId,
       ), // Check if user has voted
     }));
+
+    const response = { contest, participants: formatedParticipants };
 
     // Store in cache for 1 day
     await this.cacheManager.set(cacheKey, response);
@@ -148,6 +162,8 @@ export class ParticipantService {
     if (!participant) {
       throw new NotFoundException('Participant not found');
     }
+    if (participant.contest.status === 'inactive')
+      throw new BadRequestException('Contest is ended!!');
 
     // Get total votes
     const totalVotes = participant.votes.length;
@@ -180,7 +196,9 @@ export class ParticipantService {
       position: position,
       image: participant.babyImage,
       contestName: participant.contest.name,
+      contestStartDate: participant.contest.startDate,
       contestEndDate: participant.contest.endDate,
+      contestStatus: participant.contest.status,
       isVoted: !!isVoted, // Boolean value
     };
   }

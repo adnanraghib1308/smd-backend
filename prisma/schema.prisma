@@ -11,8 +11,9 @@ model Contest {
   id           Int      @id @default(autoincrement())  // Auto-increment ID
   name         String
   contestImage String
+  startDate    DateTime @default(now()) // Added startDate with default value
   endDate      DateTime
-  status       String   @default("active") @db.VarChar(10)
+  status       String   @default("upcoming") @db.VarChar(10) // Changed default status to "upcoming"
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   participants Participant[]

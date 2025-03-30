@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+  Put,
+} from '@nestjs/common';
 import { ContestsService } from './contests.service';
 import { Prisma } from '@prisma/client';
 
@@ -9,14 +18,17 @@ export class ContestsController {
   @Post()
   create(@Body() data: Prisma.ContestCreateInput) {
     if (data.endDate) {
-      data.endDate = new Date(data.endDate).toISOString();  // Ensure ISO 8601 format
+      data.endDate = new Date(data.endDate).toISOString(); // Ensure ISO 8601 format
+    }
+    if (data.startDate) {
+      data.startDate = new Date(data.startDate).toISOString(); // Ensure ISO 8601 format
     }
     return this.contestsService.createContest(data);
   }
 
   @Get('active')
   async getActiveContest() {
-    return this.contestsService.getActiveContest();
+    return this.contestsService.getUpcomingContest();
   }
 
   @Get('list')
@@ -37,13 +49,16 @@ export class ContestsController {
   @Put(':id')
   update(@Param('id') id: string, @Body() data: Prisma.ContestUpdateInput) {
     if (data.endDate) {
-      data.endDate = new Date(data.endDate as string).toISOString();  // Ensure ISO 8601 format
+      data.endDate = new Date(data.endDate as string).toISOString(); // Ensure ISO 8601 format
+    }
+    if (data.startDate) {
+      data.startDate = new Date(data.startDate as string).toISOString(); // Ensure ISO 8601 format
     }
     return this.contestsService.updateContest(parseInt(id), data);
   }
 
   @Delete(':id')
   remove(@Param('id') id: number) {
-    return this.contestsService.deleteContest(id)
+    return this.contestsService.deleteContest(id);
   }
 }

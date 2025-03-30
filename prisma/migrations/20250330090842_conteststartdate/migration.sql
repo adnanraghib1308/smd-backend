@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Contest" ADD COLUMN     "startDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ALTER COLUMN "status" SET DEFAULT 'upcoming';

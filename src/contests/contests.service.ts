@@ -6,10 +6,12 @@ import { ContestListResponse } from './dto/contest-list.dto';
 import { formatDistanceToNow } from 'date-fns';
 import { Cache } from 'cache-manager';
 
-
 @Injectable()
 export class ContestsService {
-  constructor(private readonly prisma: PrismaService, @Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   async createContest(data: Prisma.ContestCreateInput) {
     await this.cacheManager.del('contests_list');
@@ -33,9 +35,9 @@ export class ContestsService {
     return this.prisma.contest.delete({ where: { id } });
   }
 
-  async getActiveContest() {
+  async getUpcomingContest() {
     return this.prisma.contest.findFirst({
-      where: { status: 'active' },
+      where: { status: 'upcoming' },
       select: { id: true, name: true }, // Selecting only id and name
     });
   }
@@ -54,7 +56,14 @@ export class ContestsService {
       orderBy: { id: 'desc' },
     });
 
-    // Fetch past contests (status = completed)
+    // Fetch upcoming contests (status = upcoming)
+    const upcomingContests = await this.prisma.contest.findMany({
+      where: { status: 'upcoming' },
+      include: { _count: { select: { participants: true } } },
+      orderBy: { id: 'desc' },
+    });
+
+    // Fetch past contests (status = inactive)
     const pastContests = await this.prisma.contest.findMany({
       where: { status: 'inactive' },
       include: {
@@ -75,24 +84,39 @@ export class ContestsService {
           take: 1,
         });
 
-        const winnerParticipant = contest.participants.find((p) => p.id === winner[0]?.participantId);
+        const winnerParticipant = contest.participants.find(
+          (p) => p.id === winner[0]?.participantId,
+        );
         return {
           id: contest.id,
           title: contest.name,
           participants: contest._count.participants,
+          startDate: contest.startDate,
+          endDate: contest.endDate,
           winner: winnerParticipant?.babyName || 'No Winner',
           image: contest.contestImage,
         };
-      })
+      }),
     );
 
     // Format response
     const response: ContestListResponse = {
-      ongoing: ongoingContests.map(contest => ({
+      upcoming: upcomingContests.map((contest) => ({
         id: contest.id,
         title: contest.name,
         participants: contest._count.participants,
-        endsIn: formatDistanceToNow(contest.endDate, {addSuffix: true}),
+        startDate: contest.startDate,
+        endDate: contest.endDate,
+        startsIn: formatDistanceToNow(contest.startDate, { addSuffix: true }),
+        image: contest.contestImage,
+      })),
+      ongoing: ongoingContests.map((contest) => ({
+        id: contest.id,
+        title: contest.name,
+        participants: contest._count.participants,
+        startDate: contest.startDate,
+        endDate: contest.endDate,
+        endsIn: formatDistanceToNow(contest.endDate, { addSuffix: true }),
         image: contest.contestImage,
       })),
       past: pastContestResults,

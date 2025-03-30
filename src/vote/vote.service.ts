@@ -31,14 +31,21 @@ export class VoteService {
       );
     }
 
-    // Fetch the participant to get contestId
+    // Fetch the participant along with contest status
     const participant = await this.prisma.participant.findUnique({
       where: { id: participantId },
-      select: { contestId: true },
+      select: { contestId: true, contest: { select: { status: true } } },
     });
 
     if (!participant) {
       throw new BadRequestException('Participant not found.');
+    }
+
+    // Ensure the contest is active before allowing voting
+    if (participant.contest.status !== 'active') {
+      throw new BadRequestException(
+        'Voting is disabled now. Contest has not started yet.',
+      );
     }
 
     const contestId = participant.contestId.toString(); // Convert to string for cache key
