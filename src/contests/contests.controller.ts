@@ -7,6 +7,7 @@ import {
   Patch,
   Delete,
   Put,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ContestsService } from './contests.service';
 import { Prisma } from '@prisma/client';
@@ -42,7 +43,7 @@ export class ContestsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: number) {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.contestsService.getContestById(id);
   }
 

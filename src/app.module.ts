@@ -9,13 +9,22 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { AuthController } from './auth/auth.controller';
 import { AuthModule } from './auth/auth.module';
 import { VoteModule } from './vote/vote.module';
+import { ContestCronService } from './contest-cron/contest-cron.service';
 
 @Module({
-  imports: [ContestsModule, PrismaModule, ParticipantModule, ConfigModule.forRoot({ isGlobal: true }), CacheModule.register({
+  imports: [
+    ContestsModule,
+    PrismaModule,
+    ParticipantModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    CacheModule.register({
       isGlobal: true,
       ttl: 86400, // 1 day cache expiration in seconds
-    }), AuthModule, VoteModule],
+    }),
+    AuthModule,
+    VoteModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ContestCronService],
 })
 export class AppModule {}
