@@ -124,7 +124,7 @@ export class ParticipantService {
     });
 
     if (!participants.length) {
-      throw new NotFoundException('No participants found for this contest');
+      throw new NotFoundException('No profiles found for this contest');
     }
 
     // Format response
