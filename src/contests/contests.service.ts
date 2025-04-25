@@ -37,8 +37,16 @@ export class ContestsService {
 
   async getUpcomingContest() {
     return this.prisma.contest.findFirst({
-      where: { status: 'upcoming' },
-      select: { id: true, name: true }, // Selecting only id and name
+      where: {
+        status: {
+          in: ['upcoming', 'active'],
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
     });
   }
 
